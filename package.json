@@ -1,0 +1,20 @@
+{
+  "name": "qr-generator",
+  "version": "1.0.0",
+  "description": "A simple web-based QR code generator",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server .",
+    "dev": "npx live-server ."
+  },
+  "keywords": ["qr", "generator", "qrcode", "web"],
+  "author": "ChristopherBrown-dev",
+  "license": "MIT",
+  "dependencies": {
+    "qrcode": "^1.5.3"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  }
+}
