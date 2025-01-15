@@ -22,8 +22,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const size = parseInt(sizeSelect.value);
         
         if (!text) {
-            alert('Please enter some text or URL');
+            showError('Please enter some text or URL');
             textInput.focus();
+            return;
+        }
+
+        if (text.length > 4000) {
+            showError('Text is too long. Please enter less than 4000 characters.');
             return;
         }
 
@@ -40,23 +45,56 @@ document.addEventListener('DOMContentLoaded', function() {
             color: {
                 dark: '#000000',
                 light: '#FFFFFF'
-            }
+            },
+            errorCorrectionLevel: 'M'
         };
 
-        QRCode.toCanvas(text, options, function(error, canvas) {
+        try {
+            QRCode.toCanvas(text, options, function(error, canvas) {
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate QR Code';
+                
+                if (error) {
+                    console.error('QR Code generation error:', error);
+                    showError('Failed to generate QR code. The text might be too complex.');
+                    return;
+                }
+                
+                currentQRCanvas = canvas;
+                qrcodeDiv.appendChild(canvas);
+                downloadSection.style.display = 'block';
+                clearError();
+            });
+        } catch (error) {
             generateBtn.disabled = false;
             generateBtn.textContent = 'Generate QR Code';
-            
-            if (error) {
-                console.error('QR Code generation error:', error);
-                alert('Failed to generate QR code. Please try again.');
-                return;
-            }
-            
-            currentQRCanvas = canvas;
-            qrcodeDiv.appendChild(canvas);
-            downloadSection.style.display = 'block';
-        });
+            console.error('Unexpected error:', error);
+            showError('An unexpected error occurred. Please try again.');
+        }
+    }
+
+    function showError(message) {
+        clearError();
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'error-message';
+        errorDiv.style.cssText = `
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ffcdd2;
+            font-size: 14px;
+        `;
+        errorDiv.textContent = message;
+        textInput.parentNode.insertBefore(errorDiv, textInput.nextSibling);
+    }
+
+    function clearError() {
+        const errorDiv = document.getElementById('error-message');
+        if (errorDiv) {
+            errorDiv.remove();
+        }
     }
 
     downloadBtn.addEventListener('click', function() {
