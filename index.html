@@ -24,6 +24,17 @@
                     </select>
                 </div>
                 
+                <div class="color-controls">
+                    <div class="color-control">
+                        <label for="foregroundColor">Foreground:</label>
+                        <input type="color" id="foregroundColor" value="#000000">
+                    </div>
+                    <div class="color-control">
+                        <label for="backgroundColor">Background:</label>
+                        <input type="color" id="backgroundColor" value="#ffffff">
+                    </div>
+                </div>
+                
                 <button id="generateBtn">Generate QR Code</button>
             </div>
         </div>
@@ -31,8 +42,22 @@
         <div class="output-section">
             <div id="qrcode"></div>
             <div class="download-section" style="display: none;">
+                <div class="format-control">
+                    <label for="formatSelect">Format:</label>
+                    <select id="formatSelect">
+                        <option value="png">PNG</option>
+                        <option value="jpeg">JPEG</option>
+                        <option value="svg">SVG</option>
+                    </select>
+                </div>
                 <button id="downloadBtn">Download QR Code</button>
             </div>
+        </div>
+        
+        <div class="history-section">
+            <h3>Recent QR Codes</h3>
+            <div id="historyList" class="history-list"></div>
+            <button id="clearHistoryBtn" class="clear-btn" style="display: none;">Clear History</button>
         </div>
     </div>
     

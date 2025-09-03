@@ -1,14 +1,22 @@
 document.addEventListener('DOMContentLoaded', function() {
     const textInput = document.getElementById('textInput');
     const sizeSelect = document.getElementById('sizeSelect');
+    const foregroundColor = document.getElementById('foregroundColor');
+    const backgroundColor = document.getElementById('backgroundColor');
     const generateBtn = document.getElementById('generateBtn');
     const qrcodeDiv = document.getElementById('qrcode');
     const downloadSection = document.querySelector('.download-section');
     const downloadBtn = document.getElementById('downloadBtn');
+    const formatSelect = document.getElementById('formatSelect');
+    const historyList = document.getElementById('historyList');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     
     let currentQRCanvas = null;
+    let currentQRText = '';
+    let qrHistory = JSON.parse(localStorage.getItem('qrHistory')) || [];
 
     generateBtn.addEventListener('click', generateQRCode);
+    clearHistoryBtn.addEventListener('click', clearHistory);
     
     textInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -16,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
             generateQRCode();
         }
     });
+    
+    // Load history on page load
+    loadHistory();
 
     function generateQRCode() {
         const text = textInput.value.trim();
@@ -43,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
             height: size,
             margin: 2,
             color: {
-                dark: '#000000',
-                light: '#FFFFFF'
+                dark: foregroundColor.value,
+                light: backgroundColor.value
             },
             errorCorrectionLevel: 'M'
         };
@@ -61,9 +72,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 currentQRCanvas = canvas;
+                currentQRText = text;
                 qrcodeDiv.appendChild(canvas);
                 downloadSection.style.display = 'block';
                 clearError();
+                
+                // Save to history
+                saveToHistory(text, canvas);
             });
         } catch (error) {
             generateBtn.disabled = false;
@@ -98,14 +113,130 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     downloadBtn.addEventListener('click', function() {
-        if (!currentQRCanvas) {
+        if (!currentQRCanvas && formatSelect.value !== 'svg') {
             alert('No QR code to download');
             return;
         }
 
+        const format = formatSelect.value;
         const link = document.createElement('a');
-        link.download = 'qrcode.png';
-        link.href = currentQRCanvas.toDataURL();
+        
+        if (format === 'svg') {
+            generateSVGDownload();
+            return;
+        }
+        
+        let mimeType = 'image/png';
+        let fileName = 'qrcode.png';
+        
+        if (format === 'jpeg') {
+            mimeType = 'image/jpeg';
+            fileName = 'qrcode.jpg';
+        }
+        
+        link.download = fileName;
+        link.href = currentQRCanvas.toDataURL(mimeType);
         link.click();
     });
+    
+    function generateSVGDownload() {
+        if (!currentQRText) {
+            alert('No QR code to download');
+            return;
+        }
+        
+        const options = {
+            width: parseInt(sizeSelect.value),
+            margin: 2,
+            color: {
+                dark: foregroundColor.value,
+                light: backgroundColor.value
+            },
+            errorCorrectionLevel: 'M'
+        };
+        
+        QRCode.toString(currentQRText, { ...options, type: 'svg' }, function(error, string) {
+            if (error) {
+                console.error('SVG generation error:', error);
+                alert('Failed to generate SVG');
+                return;
+            }
+            
+            const blob = new Blob([string], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.download = 'qrcode.svg';
+            link.href = url;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+        });
+    }
+    
+    function saveToHistory(text, canvas) {
+        // Don't save duplicates
+        if (qrHistory.some(item => item.text === text)) {
+            return;
+        }
+        
+        const historyItem = {
+            text: text,
+            dataUrl: canvas.toDataURL(),
+            timestamp: Date.now()
+        };
+        
+        qrHistory.unshift(historyItem);
+        
+        // Keep only last 10 items
+        if (qrHistory.length > 10) {
+            qrHistory = qrHistory.slice(0, 10);
+        }
+        
+        localStorage.setItem('qrHistory', JSON.stringify(qrHistory));
+        loadHistory();
+    }
+    
+    function loadHistory() {
+        historyList.innerHTML = '';
+        
+        if (qrHistory.length === 0) {
+            clearHistoryBtn.style.display = 'none';
+            return;
+        }
+        
+        clearHistoryBtn.style.display = 'block';
+        
+        qrHistory.forEach((item, index) => {
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            
+            const img = document.createElement('img');
+            img.src = item.dataUrl;
+            img.alt = 'QR Code';
+            img.style.cssText = 'width: 80px; height: 80px; border-radius: 4px;';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'history-text';
+            textDiv.textContent = item.text;
+            
+            historyItem.appendChild(img);
+            historyItem.appendChild(textDiv);
+            
+            historyItem.addEventListener('click', () => {
+                textInput.value = item.text;
+                generateQRCode();
+            });
+            
+            historyList.appendChild(historyItem);
+        });
+    }
+    
+    function clearHistory() {
+        if (confirm('Are you sure you want to clear all history?')) {
+            qrHistory = [];
+            localStorage.removeItem('qrHistory');
+            loadHistory();
+        }
+    }
 });
